@@ -199,7 +199,7 @@ class NodeRtmpSession {
     this.isStarting = true;
   }
 
-  stop() {
+  async stop() {
     if (this.isStarting) {
       this.isStarting = false;
 
@@ -217,10 +217,10 @@ class NodeRtmpSession {
       }
 
       Logger.log(`[rtmp disconnect] id=${this.id}`);
-      
+
       this.connectCmdObj.bytesWritten = this.socket.bytesWritten;
       this.connectCmdObj.bytesRead = this.socket.bytesRead;
-      context.nodeEvent.emit('doneConnect', this.id, this.connectCmdObj);
+      await context.nodeEvent.emit('doneConnect', this.id, this.connectCmdObj);
 
       context.sessions.delete(this.id);
       this.socket.destroy();
@@ -255,8 +255,8 @@ class NodeRtmpSession {
 
   /**
    * onSocketData
-   * @param {Buffer} data 
-   * @returns 
+   * @param {Buffer} data
+   * @returns
    */
   onSocketData(data) {
     let bytes = data.length;
@@ -345,8 +345,8 @@ class NodeRtmpSession {
 
   /**
    * rtmpChunksCreate
-   * @param {RtmpPacket} packet 
-   * @returns 
+   * @param {RtmpPacket} packet
+   * @returns
    */
   rtmpChunksCreate(packet) {
     let header = packet.header;
@@ -406,9 +406,9 @@ class NodeRtmpSession {
 
   /**
    * rtmpChunkRead
-   * @param {Buffer} data 
-   * @param {Number} p 
-   * @param {Number} bytes 
+   * @param {Buffer} data
+   * @param {Number} p
+   * @param {Number} bytes
    */
   rtmpChunkRead(data, p, bytes) {
     // Logger.log('rtmpChunkRead', p, bytes);
@@ -631,7 +631,7 @@ class NodeRtmpSession {
       this.audioChannels = ++sound_type;
 
       if (sound_format == 4) {
-        //Nellymoser 16 kHz 
+        //Nellymoser 16 kHz
         this.audioSamplerate = 16000;
       } else if (sound_format == 5 || sound_format == 7 || sound_format == 8) {
         //Nellymoser 8 kHz | G.711 A-law | G.711 mu-law
@@ -646,9 +646,9 @@ class NodeRtmpSession {
 
       if (sound_format != 10 && sound_format != 13) {
         Logger.log(
-          `[rtmp publish] Handle audio. id=${this.id} streamPath=${this.publishStreamPath
-          } sound_format=${sound_format} sound_type=${sound_type} sound_size=${sound_size} sound_rate=${sound_rate} codec_name=${this.audioCodecName} ${this.audioSamplerate} ${this.audioChannels
-          }ch`
+            `[rtmp publish] Handle audio. id=${this.id} streamPath=${this.publishStreamPath
+            } sound_format=${sound_format} sound_type=${sound_type} sound_size=${sound_size} sound_rate=${sound_rate} codec_name=${this.audioCodecName} ${this.audioSamplerate} ${this.audioChannels
+            }ch`
         );
       }
     }
@@ -669,9 +669,9 @@ class NodeRtmpSession {
       }
 
       Logger.log(
-        `[rtmp publish] Handle audio. id=${this.id} streamPath=${this.publishStreamPath
-        } sound_format=${sound_format} sound_type=${sound_type} sound_size=${sound_size} sound_rate=${sound_rate} codec_name=${this.audioCodecName} ${this.audioSamplerate} ${this.audioChannels
-        }ch`
+          `[rtmp publish] Handle audio. id=${this.id} streamPath=${this.publishStreamPath
+          } sound_format=${sound_format} sound_type=${sound_type} sound_size=${sound_size} sound_rate=${sound_rate} codec_name=${this.audioCodecName} ${this.audioSamplerate} ${this.audioChannels
+          }ch`
       );
     }
 
@@ -806,8 +806,8 @@ class NodeRtmpSession {
       this.videoCodec = codec_id;
       this.videoCodecName = VIDEO_CODEC_NAME[codec_id];
       Logger.log(
-        `[rtmp publish] Handle video. id=${this.id} streamPath=${this.publishStreamPath} frame_type=${frame_type} codec_id=${codec_id} codec_name=${this.videoCodecName} ${this.videoWidth
-        }x${this.videoHeight}`
+          `[rtmp publish] Handle video. id=${this.id} streamPath=${this.publishStreamPath} frame_type=${frame_type} codec_id=${codec_id} codec_name=${this.videoCodecName} ${this.videoWidth
+          }x${this.videoHeight}`
       );
     }
 
@@ -1079,9 +1079,9 @@ class NodeRtmpSession {
     this.sendRtmpSampleAccess();
   }
 
-  onConnect(invokeMessage) {
+  async onConnect(invokeMessage) {
     invokeMessage.cmdObj.app = invokeMessage.cmdObj.app.replace('/', ''); //fix jwplayer
-    context.nodeEvent.emit('preConnect', this.id, invokeMessage.cmdObj);
+    await context.nodeEvent.emit('preConnect', this.id, invokeMessage.cmdObj);
     if (!this.isStarting) {
       return;
     }
@@ -1103,21 +1103,21 @@ class NodeRtmpSession {
       bytes: 0,
     };
     Logger.log(`[rtmp connect] id=${this.id} ip=${this.ip} app=${this.appname} args=${JSON.stringify(invokeMessage.cmdObj)}`);
-    context.nodeEvent.emit('postConnect', this.id, invokeMessage.cmdObj);
+    await context.nodeEvent.emit('postConnect', this.id, invokeMessage.cmdObj);
   }
 
   onCreateStream(invokeMessage) {
     this.respondCreateStream(invokeMessage.transId);
   }
 
-  onPublish(invokeMessage) {
+  async onPublish(invokeMessage) {
     if (typeof invokeMessage.streamName !== 'string') {
       return;
     }
     this.publishStreamPath = '/' + this.appname + '/' + invokeMessage.streamName.split('?')[0];
     this.publishArgs = QueryString.parse(invokeMessage.streamName.split('?')[1]);
     this.publishStreamId = this.parserPacket.header.stream_id;
-    context.nodeEvent.emit('prePublish', this.id, this.publishStreamPath, this.publishArgs);
+    await context.nodeEvent.emit('prePublish', this.id, this.publishStreamPath, this.publishArgs);
     if (!this.isStarting) {
       return;
     }
@@ -1151,18 +1151,18 @@ class NodeRtmpSession {
           context.idlePlayers.delete(idlePlayerId);
         }
       }
-      context.nodeEvent.emit('postPublish', this.id, this.publishStreamPath, this.publishArgs);
+      await context.nodeEvent.emit('postPublish', this.id, this.publishStreamPath, this.publishArgs);
     }
   }
 
-  onPlay(invokeMessage) {
+  async onPlay(invokeMessage) {
     if (typeof invokeMessage.streamName !== 'string') {
       return;
     }
     this.playStreamPath = '/' + this.appname + '/' + invokeMessage.streamName.split('?')[0];
     this.playArgs = QueryString.parse(invokeMessage.streamName.split('?')[1]);
     this.playStreamId = this.parserPacket.header.stream_id;
-    context.nodeEvent.emit('prePlay', this.id, this.playStreamPath, this.playArgs);
+    await context.nodeEvent.emit('prePlay', this.id, this.playStreamPath, this.playArgs);
 
     if (!this.isStarting) {
       return;
@@ -1193,7 +1193,7 @@ class NodeRtmpSession {
     }
   }
 
-  onStartPlay() {
+  async onStartPlay() {
     let publisherId = context.publishers.get(this.playStreamPath);
     let publisher = context.sessions.get(publisherId);
     let players = publisher.players;
@@ -1244,7 +1244,7 @@ class NodeRtmpSession {
 
     this.isIdling = false;
     this.isPlaying = true;
-    context.nodeEvent.emit('postPlay', this.id, this.playStreamPath, this.playArgs);
+    await context.nodeEvent.emit('postPlay', this.id, this.playStreamPath, this.playArgs);
     Logger.log(`[rtmp play] Join stream. id=${this.id} streamPath=${this.playStreamPath}  streamId=${this.playStreamId} `);
   }
 
@@ -1306,7 +1306,7 @@ class NodeRtmpSession {
     this.onDeleteStream(closeStream);
   }
 
-  onDeleteStream(invokeMessage) {
+  async onDeleteStream(invokeMessage) {
     if (invokeMessage.streamId == this.playStreamId) {
       if (this.isIdling) {
         context.idlePlayers.delete(this.id);
@@ -1316,7 +1316,7 @@ class NodeRtmpSession {
         if (publisherId != null) {
           context.sessions.get(publisherId).players.delete(this.id);
         }
-        context.nodeEvent.emit('donePlay', this.id, this.playStreamPath, this.playArgs);
+        await context.nodeEvent.emit('donePlay', this.id, this.playStreamPath, this.playArgs);
         this.isPlaying = false;
       }
       Logger.log(`[rtmp play] Close stream. id=${this.id} streamPath=${this.playStreamPath} streamId=${this.playStreamId}`);
@@ -1330,7 +1330,7 @@ class NodeRtmpSession {
     if (invokeMessage.streamId == this.publishStreamId) {
       if (this.isPublishing) {
         Logger.log(`[rtmp publish] Close stream. id=${this.id} streamPath=${this.publishStreamPath} streamId=${this.publishStreamId}`);
-        context.nodeEvent.emit('donePublish', this.id, this.publishStreamPath, this.publishArgs);
+        await context.nodeEvent.emit('donePublish', this.id, this.publishStreamPath, this.publishArgs);
         if (this.isStarting) {
           this.sendStatusMessage(this.publishStreamId, 'status', 'NetStream.Unpublish.Success', `${this.publishStreamPath} is now unpublished.`);
         }

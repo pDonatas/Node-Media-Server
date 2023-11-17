@@ -3,12 +3,12 @@
 //  illuspas[a]gmail.com
 //  Copyright (c) 2018 Nodemedia. All rights reserved.
 //
-const EventEmitter = require('events');
+const AwaitEventEmitter = require('await-event-emitter').default
 
 let sessions = new Map();
 let publishers = new Map();
 let idlePlayers = new Set();
-let nodeEvent = new EventEmitter();
+let nodeEvent = new AwaitEventEmitter();
 let stat = {
   inbytes: 0,
   outbytes: 0,

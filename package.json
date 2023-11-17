@@ -24,6 +24,7 @@
   },
   "homepage": "https://github.com/illuspas/Node-Media-Server#readme",
   "dependencies": {
+    "await-event-emitter": "^2.0.2",
     "basic-auth-connect": "^1.0.0",
     "chalk": "^4.1.0",
     "dateformat": "^4.6.3",
