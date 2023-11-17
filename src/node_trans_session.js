@@ -30,8 +30,10 @@ class NodeTransSession extends EventEmitter {
   run() {
     let vc = this.conf.vc || 'copy';
     let ac = this.conf.ac || 'copy';
+    let hlsPath = this.conf.hlsroot || this.conf.mediaroot;
     let inPath = 'rtmp://127.0.0.1:' + this.conf.rtmpPort + this.conf.streamPath;
     let ouPath = `${this.conf.mediaroot}/${this.conf.streamApp}/${this.conf.streamName}`;
+    let ouHlsPath = `${hlsPath}/${this.conf.streamApp}/${this.conf.streamName}`;
     let mapStr = '';
 
     if (this.conf.rtmp && this.conf.rtmpApp) {
@@ -53,9 +55,9 @@ class NodeTransSession extends EventEmitter {
     if (this.conf.hls) {
       this.conf.hlsFlags = this.getConfig('hlsFlags') || '';
       let hlsFileName = 'index.m3u8';
-      let mapHls = `${this.conf.hlsFlags}${ouPath}/${hlsFileName}|`;
+      let mapHls = `${this.conf.hlsFlags}${ouHlsPath}/${hlsFileName}|`;
       mapStr += mapHls;
-      Logger.log('[Transmuxing HLS] ' + this.conf.streamPath + ' to ' + ouPath + '/' + hlsFileName);
+      Logger.log('[Transmuxing HLS] ' + this.conf.streamPath + ' to ' + ouHlsPath + '/' + hlsFileName);
     }
     if (this.conf.dash) {
       this.conf.dashFlags = this.conf.dashFlags ? this.conf.dashFlags : '';
@@ -65,14 +67,17 @@ class NodeTransSession extends EventEmitter {
       Logger.log('[Transmuxing DASH] ' + this.conf.streamPath + ' to ' + ouPath + '/' + dashFileName);
     }
     mkdirp.sync(ouPath);
-    let argv = ['-y', '-i', inPath];
+    if (ouPath != ouHlsPath) {
+      mkdirp.sync(ouHlsPath);
+    }
+    let argv = ['-y', '-fflags', 'nobuffer', '-i', inPath];
     Array.prototype.push.apply(argv, ['-c:v', vc]);
     Array.prototype.push.apply(argv, this.conf.vcParam);
     Array.prototype.push.apply(argv, ['-c:a', ac]);
     Array.prototype.push.apply(argv, this.conf.acParam);
     Array.prototype.push.apply(argv, ['-f', 'tee', '-map', '0:a?', '-map', '0:v?', mapStr]);
     argv = argv.filter((n) => { return n; }); //去空
-    
+
     this.ffmpeg_exec = spawn(this.conf.ffmpeg, argv);
     this.ffmpeg_exec.on('error', (e) => {
       Logger.ffdebug(e);

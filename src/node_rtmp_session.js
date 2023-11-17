@@ -217,7 +217,7 @@ class NodeRtmpSession {
       }
 
       Logger.log(`[rtmp disconnect] id=${this.id}`);
-      
+
       this.connectCmdObj.bytesWritten = this.socket.bytesWritten;
       this.connectCmdObj.bytesRead = this.socket.bytesRead;
       context.nodeEvent.emit('doneConnect', this.id, this.connectCmdObj);
@@ -255,8 +255,8 @@ class NodeRtmpSession {
 
   /**
    * onSocketData
-   * @param {Buffer} data 
-   * @returns 
+   * @param {Buffer} data
+   * @returns
    */
   onSocketData(data) {
     let bytes = data.length;
@@ -345,8 +345,8 @@ class NodeRtmpSession {
 
   /**
    * rtmpChunksCreate
-   * @param {RtmpPacket} packet 
-   * @returns 
+   * @param {RtmpPacket} packet
+   * @returns
    */
   rtmpChunksCreate(packet) {
     let header = packet.header;
@@ -406,9 +406,9 @@ class NodeRtmpSession {
 
   /**
    * rtmpChunkRead
-   * @param {Buffer} data 
-   * @param {Number} p 
-   * @param {Number} bytes 
+   * @param {Buffer} data
+   * @param {Number} p
+   * @param {Number} bytes
    */
   rtmpChunkRead(data, p, bytes) {
     // Logger.log('rtmpChunkRead', p, bytes);
@@ -631,7 +631,7 @@ class NodeRtmpSession {
       this.audioChannels = ++sound_type;
 
       if (sound_format == 4) {
-        //Nellymoser 16 kHz 
+        //Nellymoser 16 kHz
         this.audioSamplerate = 16000;
       } else if (sound_format == 5 || sound_format == 7 || sound_format == 8) {
         //Nellymoser 8 kHz | G.711 A-law | G.711 mu-law
@@ -1079,9 +1079,9 @@ class NodeRtmpSession {
     this.sendRtmpSampleAccess();
   }
 
-  onConnect(invokeMessage) {
-    invokeMessage.cmdObj.app = invokeMessage.cmdObj.app.replace('/', ''); //fix jwplayer
-    context.nodeEvent.emit('preConnect', this.id, invokeMessage.cmdObj);
+  async onConnect(invokeMessage) {
+    invokeMessage.cmdObj.app = invokeMessage.cmdObj.app.replace("/", ""); //fix jwplayer
+    context.nodeEvent.emit("preConnect", this.id, invokeMessage.cmdObj);
     if (!this.isStarting) {
       return;
     }
@@ -1110,7 +1110,7 @@ class NodeRtmpSession {
     this.respondCreateStream(invokeMessage.transId);
   }
 
-  onPublish(invokeMessage) {
+  async onPublish(invokeMessage) {
     if (typeof invokeMessage.streamName !== 'string') {
       return;
     }
@@ -1121,6 +1121,17 @@ class NodeRtmpSession {
     if (!this.isStarting) {
       return;
     }
+    let prePublish = await context.nodeCheck.run("prePublish", {
+      id: this.id,
+      eventName: "prePublish",
+      stream: {
+        id: this.publishStreamId,
+        path: this.publishStreamPath,
+        app: this.appname,
+        key: invokeMessage.streamName.split("?")[0]
+      },
+      data: this.publishArgs
+    });
 
     if (this.config.auth && this.config.auth.publish && !this.isLocal) {
       let results = NodeCoreUtils.verifyAuth(this.publishArgs.sign, this.publishStreamPath, this.config.auth.secret);
@@ -1155,7 +1166,7 @@ class NodeRtmpSession {
     }
   }
 
-  onPlay(invokeMessage) {
+  async onPlay(invokeMessage) {
     if (typeof invokeMessage.streamName !== 'string') {
       return;
     }
@@ -1167,6 +1178,17 @@ class NodeRtmpSession {
     if (!this.isStarting) {
       return;
     }
+    let prePlay = await context.nodeCheck.run("prePlay", {
+      id: this.id,
+      eventName: "prePlay",
+      stream: {
+        id: this.playStreamId,
+        path: this.playStreamPath,
+        app: this.appname,
+        key: invokeMessage.streamName.split("?")[0]
+      },
+      data: this.playArgs
+    });
 
     if (this.config.auth && this.config.auth.play && !this.isLocal) {
       let results = NodeCoreUtils.verifyAuth(this.playArgs.sign, this.playStreamPath, this.config.auth.secret);
@@ -1184,16 +1206,19 @@ class NodeRtmpSession {
       this.respondPlay();
     }
 
-    if (context.publishers.has(this.playStreamPath)) {
-      this.onStartPlay();
+      if (context.publishers.has(this.playStreamPath)) {
+        this.onStartPlay();
+      } else {
+        Logger.log(`[rtmp play] Stream not found. id=${this.id} streamPath=${this.playStreamPath}  streamId=${this.playStreamId}`);
+        this.isIdling = true;
+        context.idlePlayers.add(this.id);
+      }
     } else {
-      Logger.log(`[rtmp play] Stream not found. id=${this.id} streamPath=${this.playStreamPath}  streamId=${this.playStreamId}`);
-      this.isIdling = true;
-      context.idlePlayers.add(this.id);
-    }
+      this.reject();
+    };
   }
 
-  onStartPlay() {
+  async onStartPlay() {
     let publisherId = context.publishers.get(this.playStreamPath);
     let publisher = context.sessions.get(publisherId);
     let players = publisher.players;

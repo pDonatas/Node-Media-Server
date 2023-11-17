@@ -1,4 +1,4 @@
-#!/usr/bin/env node 
+#!/usr/bin/env node
 
 const NodeMediaServer = require('..');
 let argv = require('minimist')(process.argv.slice(2),
@@ -15,7 +15,7 @@ let argv = require('minimist')(process.argv.slice(2),
       'https_port': 8443,
     }
   });
-  
+
 if (argv.help) {
   console.log('Usage:');
   console.log('  node-media-server --help // print help information');
@@ -57,9 +57,13 @@ const config = {
     play: false,
     publish: false,
     secret: 'nodemedia2017privatekey'
+  },
+  logging: {
+    shell_output: 'NORMAL',
+    file_output: 'NORMAL',
+    file_path: './logs'
   }
 };
-
 
 let nms = new NodeMediaServer(config);
 nms.run();
