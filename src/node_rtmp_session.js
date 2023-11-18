@@ -1082,6 +1082,7 @@ class NodeRtmpSession {
   async onConnect(invokeMessage) {
     invokeMessage.cmdObj.app = invokeMessage.cmdObj.app.replace('/', ''); //fix jwplayer
     invokeMessage.cmdObj.ip = this.ip;
+    invokeMessage.cmdObj.streamPath = this.publishStreamPath;
     await context.nodeEvent.emit('preConnect', this.id, invokeMessage.cmdObj);
     if (!this.isStarting) {
       return;
