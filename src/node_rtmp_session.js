@@ -1163,6 +1163,7 @@ class NodeRtmpSession {
     }
     this.playStreamPath = '/' + this.appname + '/' + invokeMessage.streamName.split('?')[0];
     this.playArgs = QueryString.parse(invokeMessage.streamName.split('?')[1]);
+    this.playArgs.ip = this.ip;
     this.playStreamId = this.parserPacket.header.stream_id;
     await context.nodeEvent.emit('prePlay', this.id, this.playStreamPath, this.playArgs);
 

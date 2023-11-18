@@ -114,6 +114,8 @@ class NodeFlvSession {
   }
 
   onPlay() {
+    this.playArgs.ip = this.ip;
+
     context.nodeEvent.emit('prePlay', this.id, this.playStreamPath, this.playArgs);
     if (!this.isStarting) {
       return;
