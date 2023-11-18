@@ -188,6 +188,7 @@ class NodeFlvSession {
     this.isIdling = false;
     this.isPlaying = true;
     Logger.log(`[${this.TAG} play] Join stream. id=${this.id} streamPath=${this.playStreamPath} `);
+    this.playArgs.ip = this.ip;
     context.nodeEvent.emit('postPlay', this.id, this.playStreamPath, this.playArgs);
   }
 

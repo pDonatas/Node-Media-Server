@@ -1247,6 +1247,7 @@ class NodeRtmpSession {
 
     this.isIdling = false;
     this.isPlaying = true;
+    this.playArgs.ip = this.ip;
     await context.nodeEvent.emit('postPlay', this.id, this.playStreamPath, this.playArgs);
     Logger.log(`[rtmp play] Join stream. id=${this.id} streamPath=${this.playStreamPath}  streamId=${this.playStreamId} `);
   }
